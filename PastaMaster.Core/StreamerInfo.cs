@@ -34,6 +34,7 @@ namespace PastaMaster.Core
         public bool IsStreaming;
 
         protected IrcBot Bot;
+        protected Task ChatTask;
         protected Thread ChatThread;
 
         protected StreamerInfo(string name, string id)
@@ -87,7 +88,18 @@ namespace PastaMaster.Core
             ChatThread = new Thread(Bot.RunClient);
             ChatThread.Start();
 
+            //ChatTask = new Task(Bot.RunClient);
+
+            //ChatTask.ContinueWith(ExceptionHandler, TaskContinuationOptions.NotOnFaulted);
+            //ChatTask.Start();
+            
             return sb.ToString();
+        }
+
+        private void ExceptionHandler(Task task)
+        {
+            var exception = task.Exception;
+            Console.WriteLine(exception);
         }
 
         public override async Task<string> ProcessStreamer()
@@ -115,7 +127,7 @@ namespace PastaMaster.Core
             sb.Insert(0, "@everyone\n");
             var viewers = await GetViewerCount();
             sb.Append($"Viewers: {viewers}\n");
-
+            
 
             return sb.ToString();
         }
@@ -130,7 +142,8 @@ namespace PastaMaster.Core
 
         public override Task InitAtEnd()
         {
-            ChatThread.Abort();
+            if (ChatThread.IsAlive)
+                ChatThread.Abort();
             return Task.CompletedTask;
         }
 

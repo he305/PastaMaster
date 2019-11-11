@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ContentModelStore">
-    <e p="$USER_HOME$/.Rider2019.2/system/extResources" t="IncludeRecursive" />
-    <e p="$USER_HOME$/.Rider2019.2/system/resharper-host/local/Transient/ReSharperHost/v192/SolutionCaches/_PastaMaster.-904557921.00" t="ExcludeRecursive" />
-    <e p="$PROJECT_DIR$" t="IncludeFlat">
+    <e p="C:\Users\sergey\.Rider2019.1\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\sergey\.Rider2019.1\system\resharper-host\local\Transient\ReSharperHost\v191\SolutionCaches\_PastaMaster.1542259882.00" t="ExcludeRecursive" />
+    <e p="C:\Users\sergey\RiderProjects\PastaMaster" t="IncludeFlat">
+      <e p="packages" t="ExcludeRecursive" />
       <e p="PastaMaster.Core" t="IncludeRecursive">
-        <e p="IrcBot.cs" t="Include" />
-        <e p="NetUtills.cs" t="Include" />
-        <e p="PastaMaster.Core.csproj" t="IncludeRecursive" />
-        <e p="Program.cs" t="Include" />
-        <e p="RegexUtills.cs" t="Include" />
-        <e p="StreamerFeeder.cs" t="Include" />
-        <e p="StreamerInfo.cs" t="Include" />
+        <e p=".gitignore" t="Include" />
         <e p="bin" t="ExcludeRecursive" />
+        <e p="IrcBot.cs" t="Include" />
+        <e p="MessageRecord.cs" t="Include" />
+        <e p="MongoMessageRepository.cs" t="Include" />
+        <e p="NetUtills.cs" t="Include" />
         <e p="obj" t="ExcludeRecursive">
           <e p="Debug" t="Include">
             <e p="netcoreapp3.0" t="Include">
@@ -20,10 +19,14 @@
             </e>
           </e>
         </e>
+        <e p="PastaMaster.Core.csproj" t="IncludeRecursive" />
+        <e p="Program.cs" t="Include" />
+        <e p="RegexUtills.cs" t="Include" />
+        <e p="StreamerFeeder.cs" t="Include" />
+        <e p="StreamerInfo.cs" t="Include" />
         <e p="streamers.json" t="Include" />
       </e>
       <e p="PastaMaster.sln" t="IncludeFlat" />
-      <e p="packages" t="ExcludeRecursive" />
     </e>
   </component>
 </project>

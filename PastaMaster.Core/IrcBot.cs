@@ -9,6 +9,7 @@ using FluentScheduler;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using TwitchLib.Client;
+using TwitchLib.Client.Enums;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Events;
@@ -19,10 +20,12 @@ namespace PastaMaster.Core
     {
         private readonly TwitchClient _client;
         private readonly List<ChatMessage> _pastas;
+        private readonly List<ChatMessage> _cachedPastas;
         private const int MinimumPastaSize = 30;
         private const int MinimumLevenshteinDistance = 80;
-        private const int MinuteToAbortPasta = 2;
-        private const int SaveInterval = 3;
+        private const int MinuteToAbortPasta = 30;
+        private const int SaveInterval = 1;
+        private readonly StreamerInfo _streamer;
         private static string _token;
 
         public static void InitCredentials(IConfiguration configuration)
@@ -32,9 +35,10 @@ namespace PastaMaster.Core
 
         public IrcBot(StreamerInfo streamer)
         {
+            _streamer = streamer;
             var credentials = new ConnectionCredentials("he305bot", _token);
             
-            _client = new TwitchClient();
+            _client = new TwitchClient(protocol:ClientProtocol.TCP);
             _client.Initialize(credentials, streamer.Name);
 
             _client.OnLog += Client_OnLog;
@@ -48,6 +52,7 @@ namespace PastaMaster.Core
             _client.OnConnectionError += Client_OnConnectionError;
             _client.OnMessageThrottled += Client_OnMessageThrottled;
             _pastas = new List<ChatMessage>();
+            _cachedPastas = new List<ChatMessage>();
         }
 
         private void Client_OnMessageThrottled(object sender, OnMessageThrottledEventArgs e)
@@ -70,14 +75,16 @@ namespace PastaMaster.Core
             Console.WriteLine("DISCONNECTED");
         }
 
-        public void RunClient(object o)
+        public void RunClient()
         {
-            Action cleanMethod = CleanNonPastas;
-            var registry = new Registry();
+            //Action cleanMethod = CleanNonPastas;
+            /*var registry = new Registry();
             registry.Schedule(cleanMethod).ToRunEvery(SaveInterval).Minutes();
             JobManager.Initialize(registry);
-            JobManager.JobException += info => Console.WriteLine("An error just happened with a scheduled job: " + info.Exception);
+            JobManager.JobException += info => Console.WriteLine("An error just happened with a scheduled job: " + info.Exception);*/
 
+            var saveTask = new Task(CleanNonPastas);
+            saveTask.Start();
             _client.Connect();
         }
 
@@ -96,7 +103,7 @@ namespace PastaMaster.Core
 
         private async void Client_OnMessageReceived(object sender, OnMessageReceivedArgs e)
         {
-            Console.WriteLine($"{e.ChatMessage.Username}: {e.ChatMessage.Message}");
+            //Console.WriteLine($"{e.ChatMessage.Username}: {e.ChatMessage.Message}");
 
             if (e.ChatMessage.Message.Length < MinimumPastaSize 
                 || e.ChatMessage.Username.Contains("bot", StringComparison.InvariantCultureIgnoreCase)
@@ -125,22 +132,42 @@ namespace PastaMaster.Core
         {
         }
 
-        private void CleanNonPastas()
+        private async void CleanNonPastas()
         {
-            for (var i = _pastas.Count - 1; i >= 0; i--)
+            while (true)
             {
-                var dateTime = DateTime.Now;
-                var span = dateTime - _pastas[i].DateTime;
-                if (span.Minutes >= MinuteToAbortPasta && !_pastas[i].IsPasta)
-                    _pastas.RemoveAt(i);
+                await Task.Delay(SaveInterval * 60 * 1000);
+                var listToCheck = new List<ChatMessage>(_pastas);
+                for (var i = listToCheck.Count - 1; i >= 0; i--)
+                {
+                    var dateTime = DateTime.Now;
+                    var span = dateTime - listToCheck[i].DateTime;
+                    if (span.Seconds >= MinuteToAbortPasta && !listToCheck[i].IsPasta)
+                        listToCheck.RemoveAt(i);
+                }
+
+                var listToSave = new List<ChatMessage>();
+
+                foreach (var pasta in listToCheck)
+                {
+                    if (pasta.IsPasta)
+                        listToSave.Add(pasta);
+                }
+
+                var nonIntersect = listToSave.Except(_cachedPastas);
+
+                var listToDatabase = nonIntersect.Select(message => new MessageRecord(message.Name, message.Message, message.DateTime, message.IsPasta, message.PastaId, _streamer.Name)).ToList();
+
+                await MongoMessageRepository.InsertMessages(listToDatabase);
+                
+                var json = JsonConvert.SerializeObject(listToSave);
+                await using (var file = new StreamWriter(AppContext.BaseDirectory + $"{_streamer.Name}.json", false))
+                {
+                    file.WriteLine(json);
+                }
+
+                Console.WriteLine("Should be saved");
             }
-            
-            var json = JsonConvert.SerializeObject(_pastas);
-            using (var file = new StreamWriter(AppContext.BaseDirectory + "test.json", false))
-            {
-                file.WriteLine(json);
-            }
-            Console.WriteLine("Should be saved");
         }
 
         private class ChatMessage

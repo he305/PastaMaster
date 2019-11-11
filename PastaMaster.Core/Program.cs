@@ -36,6 +36,8 @@ namespace PastaMaster.Core
 
         private async Task MainAsync()
         {
+            MongoMessageRepository.Init(_config);
+            await MongoMessageRepository.GetAllMessages();
             await AddInfiniteTasks();
             await Task.Delay(Timeout.Infinite);
         }
