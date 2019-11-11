@@ -10,7 +10,9 @@
       <PackageReference Include="FluentScheduler" Version="5.3.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0" />
-      <PackageReference Include="MongoDB.Driver" Version="2.9.3" />
+      <PackageReference Include="MongoDB.Bson" Version="2.10.0-beta1" />
+      <PackageReference Include="MongoDB.Driver" Version="2.10.0-beta1" />
+      <PackageReference Include="MongoDB.Driver.Core" Version="2.10.0-beta1" />
       <PackageReference Include="NLog" Version="4.6.8" />
       <PackageReference Include="TwitchLib" Version="3.0.1" />
     </ItemGroup>

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
@@ -27,6 +28,11 @@ namespace PastaMaster.Core
             
             _database = _client.GetDatabase(config["db_name"]);
             _messagesCollection = _database.GetCollection<MessageRecord>(config["messages"]);
+        }
+
+        public static async Task<bool> IsConnected()
+        {
+            return _database.RunCommandAsync((Command<BsonDocument>)"{ping:1}").Wait(3000);
         }
 
         public static async Task InsertMessage(MessageRecord msg)

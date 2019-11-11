@@ -37,7 +37,11 @@ namespace PastaMaster.Core
         private async Task MainAsync()
         {
             MongoMessageRepository.Init(_config);
-            await MongoMessageRepository.GetAllMessages();
+            if (!await MongoMessageRepository.IsConnected())
+            {
+                Console.WriteLine("Database is not connected");
+                return;
+            }
             await AddInfiniteTasks();
             await Task.Delay(Timeout.Infinite);
         }
