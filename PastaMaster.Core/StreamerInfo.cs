@@ -28,11 +28,11 @@ namespace PastaMaster.Core
 
     public abstract class StreamerInfo
     {
-        protected readonly string Id;
+        public readonly string Id;
         public readonly string Name;
         protected string Game;
         public bool IsStreaming;
-
+        
         protected IrcBot Bot;
         protected Task ChatTask;
         protected Thread ChatThread;
@@ -54,7 +54,7 @@ namespace PastaMaster.Core
         public abstract Task<string> InitAtStart();
         public abstract Task<string> ProcessStreamer();
         public abstract Task<string> GetViewerCount();
-        public abstract Task InitAtEnd();
+        public abstract Task<string> EndStreamProcess();
     }
 
     public sealed class StreamerInfoTwitch : StreamerInfo
@@ -85,13 +85,12 @@ namespace PastaMaster.Core
             Game = curGame;
             
             Bot = new IrcBot(this);
-            ChatThread = new Thread(Bot.RunClient);
-            ChatThread.Start();
+            //ChatThread = new Thread(Bot.RunClient);
+            //ChatThread.Start();
 
-            //ChatTask = new Task(Bot.RunClient);
+            ChatTask = new Task(Bot.RunClient);
 
-            //ChatTask.ContinueWith(ExceptionHandler, TaskContinuationOptions.NotOnFaulted);
-            //ChatTask.Start();
+            ChatTask.Start();
             
             return sb.ToString();
         }
@@ -127,7 +126,6 @@ namespace PastaMaster.Core
             sb.Insert(0, "@everyone\n");
             var viewers = await GetViewerCount();
             sb.Append($"Viewers: {viewers}\n");
-            
 
             return sb.ToString();
         }
@@ -140,11 +138,29 @@ namespace PastaMaster.Core
             return res.Stream == null ? "0" : res.Stream.Viewers.ToString();
         }
 
-        public override Task InitAtEnd()
+        public override async Task<string> EndStreamProcess()
         {
             if (ChatThread.IsAlive)
-                ChatThread.Abort();
-            return Task.CompletedTask;
+            {
+                Bot.IsRunning = false;
+                Bot.AbortBot();
+                ChatThread.Abort();   
+            }
+            
+            
+            var sb = new StringBuilder($"{Name} went offline\n");
+
+            var curTitle = await GetTitle();
+            sb.Append($"Title: {curTitle}\n");
+            _title = curTitle;
+
+            await Task.Delay(1 * 1000);
+
+            var curGame = await GetStreamGame();
+            sb.Append($"Game: {curGame}\n");
+            Game = curGame;
+
+            return sb.ToString();
         }
 
         private async Task<string> GetStreamGame()
@@ -196,9 +212,10 @@ namespace PastaMaster.Core
             return !(await GetStreamDataGoodGame() is { } res) ? "0" : res[Id]["viewers"].ToString();
         }
 
-        public override Task InitAtEnd()
+        public override async Task<string> EndStreamProcess()
         {
-            return Task.CompletedTask;
+            var sb = new StringBuilder($"{Name} went offline\n");
+            return sb.ToString();
         }
 
         private async Task<string> GetStreamGame()

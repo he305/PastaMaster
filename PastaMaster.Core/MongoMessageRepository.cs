@@ -16,8 +16,9 @@ namespace PastaMaster.Core
 
         public static void Init(IConfiguration config)
         {
-            var clientSetting = MongoClientSettings.FromConnectionString(config["connection_string"]);
-            _client = new MongoClient(clientSetting);
+            var connectionString = "mongodb://localhost:27017";
+            //var clientSetting = MongoClientSettings.FromConnectionString(config["connection_string"]);
+            _client = new MongoClient(connectionString);
             /*var sett = new MongoClientSettings
             {
                 Server = new MongoServerAddress(config["db_server"], int.Parse(config["db_port"])),
@@ -26,13 +27,13 @@ namespace PastaMaster.Core
             
             _client = new MongoClient(sett);*/
             
-            _database = _client.GetDatabase(config["db_name"]);
-            _messagesCollection = _database.GetCollection<MessageRecord>(config["messages"]);
+            _database = _client.GetDatabase("test");
+            _messagesCollection = _database.GetCollection<MessageRecord>("irc-messages");
         }
 
-        public static async Task<bool> IsConnected()
+        public static bool IsConnected()
         {
-            return _database.RunCommandAsync((Command<BsonDocument>)"{ping:1}").Wait(3000);
+            return _database.RunCommandAsync((Command<BsonDocument>)"{ping:1}").Wait(1000);
         }
 
         public static async Task InsertMessage(MessageRecord msg)
@@ -42,12 +43,44 @@ namespace PastaMaster.Core
 
         public static async Task<List<MessageRecord>> GetAllMessages()
         {
-            return await _messagesCollection.Find(new BsonDocument()).ToListAsync();
+            return await _messagesCollection.Find(_ => true).ToListAsync();
         }
 
         public static async Task InsertMessages(IEnumerable<MessageRecord> msgs)
         {
             await _messagesCollection.InsertManyAsync(msgs);
+        }
+
+        public static async Task<List<MessageRecord>> GetMessagesByField(string fieldName, string fieldValue)
+        {
+            var filter = Builders<MessageRecord>.Filter.Eq(fieldName, fieldValue);
+            var result = await _messagesCollection.Find(filter).ToListAsync();
+
+            return result;
+        }
+        public static async Task<MessageRecord> GetFirstMessageByField(string fieldName, string fieldValue)
+        {
+            var filter = Builders<MessageRecord>.Filter.Eq(fieldName, fieldValue);
+            var result = await _messagesCollection.Find(filter).SingleAsync();
+
+            return result;
+        }
+
+        public static async Task<bool> UpdateMessage(ObjectId id, string udateFieldName, string updateFieldValue)
+        {
+            var filter = Builders<MessageRecord>.Filter.Eq("_id", id);
+            var update = Builders<MessageRecord>.Update.Set(udateFieldName, updateFieldValue);
+
+            var result = await _messagesCollection.UpdateOneAsync(filter, update);
+
+            return result.ModifiedCount != 0;
+        }
+
+        public static async Task<bool> DeleteMessageById(ObjectId id)
+        {
+            var filter = Builders<MessageRecord>.Filter.Eq("_id", id);
+            var result = await _messagesCollection.DeleteOneAsync(filter);
+            return result.DeletedCount != 0;
         }
     }
 }

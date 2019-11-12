@@ -1,16 +1,12 @@
 {
   "twitch": [
     {
-      "name" : "lasqa",
-      "id" : "60796327"
+      "name" : "melharucos",
+      "id" : "26819117"
     },
     {
-      "name" : "forsen",
-      "id" : "22484632"
-    },
-    {
-      "name": "segall",
-      "id": "35856714"
+      "name" : "segall",
+      "id": null
     }
   ],
   "goodgame": [

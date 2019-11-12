@@ -18,6 +18,7 @@ namespace PastaMaster.Core
         private static List<StreamerInfo> _streamers;
         private static bool _isRunning;
         private static IConfiguration _config;
+        public static List<string> TwitchEmotes { get; set; }
 
         public static void Init(IConfiguration config)
         {
@@ -48,9 +49,9 @@ namespace PastaMaster.Core
                     }
                     else if (!isStreaming && streamer.IsStreaming)
                     {
-                        Console.WriteLine($"{streamer.Name} went offline");
                         streamer.SetStreaming(false);
-                        await streamer.InitAtEnd();
+                        var data = await streamer.EndStreamProcess();
+                        Console.WriteLine(data);
                     }
 
                     await Task.Delay(1 * 1000);
@@ -61,6 +62,8 @@ namespace PastaMaster.Core
                 }
 
                 Logger.Info("Streamers have been checked");
+                await Task.Run(DatabaseHandler.FixPastaIds);
+                Logger.Info("Database optimized");
                 await Task.Delay(60 * 1000);
             }
         }
@@ -110,7 +113,7 @@ namespace PastaMaster.Core
                 Logger.Fatal($"Can't open streamers.json: {e}");
                 return false;
             }
-
+            
             _isRunning = true;
             return true;
         }
