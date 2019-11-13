@@ -62,8 +62,10 @@ namespace PastaMaster.Core
                 }
 
                 Logger.Info("Streamers have been checked");
-                await Task.Run(DatabaseHandler.FixPastaIds);
-                Logger.Info("Database optimized");
+//                await Task.Run(DatabaseHandler.FixPastaIds);
+//                Logger.Info("Database optimized");
+                var count = await DatabaseHandler.AddPastaInDatabase();
+                Logger.Info($"{count} unique pastas added to database");
                 await Task.Delay(60 * 1000);
             }
         }

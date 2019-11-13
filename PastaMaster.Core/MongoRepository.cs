@@ -8,15 +8,16 @@ using MongoDB.Driver;
 
 namespace PastaMaster.Core
 {
-    public class MongoMessageRepository
+    public class MongoRepository
     {
         private static IMongoClient _client;
         private static IMongoDatabase _database;
         private static IMongoCollection<MessageRecord> _messagesCollection;
+        private static IMongoCollection<PastaRecord> _pastasCollection;
 
         public static void Init(IConfiguration config)
         {
-            var connectionString = "mongodb://localhost:27017";
+            var connectionString = config["connection_string"];
             //var clientSetting = MongoClientSettings.FromConnectionString(config["connection_string"]);
             _client = new MongoClient(connectionString);
             /*var sett = new MongoClientSettings
@@ -29,6 +30,7 @@ namespace PastaMaster.Core
             
             _database = _client.GetDatabase("test");
             _messagesCollection = _database.GetCollection<MessageRecord>("irc-messages");
+            _pastasCollection = _database.GetCollection<PastaRecord>("pastas");
         }
 
         public static bool IsConnected()
@@ -40,21 +42,44 @@ namespace PastaMaster.Core
         {
             await _messagesCollection.InsertOneAsync(msg);
         }
+        public static async Task InsertPasta(PastaRecord pasta)
+        {
+            await _pastasCollection.InsertOneAsync(pasta);
+        }
 
         public static async Task<List<MessageRecord>> GetAllMessages()
         {
             return await _messagesCollection.Find(_ => true).ToListAsync();
         }
 
+        public static async Task<List<PastaRecord>> GetAllPastas()
+        {
+            return await _pastasCollection.Find(_ => true).ToListAsync();
+        }
+        
+
         public static async Task InsertMessages(IEnumerable<MessageRecord> msgs)
         {
             await _messagesCollection.InsertManyAsync(msgs);
+        }
+
+        public static async Task InsertPastas(IEnumerable<PastaRecord> pastas)
+        {
+            await _pastasCollection.InsertManyAsync(pastas);
         }
 
         public static async Task<List<MessageRecord>> GetMessagesByField(string fieldName, string fieldValue)
         {
             var filter = Builders<MessageRecord>.Filter.Eq(fieldName, fieldValue);
             var result = await _messagesCollection.Find(filter).ToListAsync();
+
+            return result;
+        }
+
+        public static async Task<List<PastaRecord>> GetPastasByField(string fieldName, string fieldValue)
+        {
+            var filter = Builders<PastaRecord>.Filter.Eq(fieldName, fieldValue);
+            var result = await _pastasCollection.Find(filter).ToListAsync();
 
             return result;
         }

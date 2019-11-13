@@ -6,6 +6,7 @@
     <e p="$PROJECT_DIR$" t="IncludeFlat">
       <e p="PastaMaster.Core" t="IncludeRecursive">
         <e p=".gitignore" t="Include" />
+        <e p="DatabaseHandler.cs" t="Include" />
         <e p="IrcBot.cs" t="Include" />
         <e p="MessageRecord.cs" t="Include" />
         <e p="MongoMessageRepository.cs" t="Include" />

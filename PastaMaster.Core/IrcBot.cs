@@ -20,9 +20,9 @@ namespace PastaMaster.Core
     public class IrcBot
     {
         private readonly TwitchClient _client;
-        private readonly List<ChatMessage> _pastas;
-        private readonly List<ChatMessage> _cachedPastas;
-        private const int MinimumPastaSize = 20;
+        private readonly List<ChatMessage> _pastas = new List<ChatMessage>();
+        private readonly List<ChatMessage> _cachedPastas = new List<ChatMessage>();
+        private const int MinimumPastaSize = 50;
         private const int MinimumLevenshteinDistance = 80;
         private const int MinuteToAbortPasta = 30;
         private const int SaveInterval = 1;
@@ -56,8 +56,6 @@ namespace PastaMaster.Core
             _client.OnError += Client_OnError;
             _client.OnConnectionError += Client_OnConnectionError;
             _client.OnMessageThrottled += Client_OnMessageThrottled;
-            _pastas = new List<ChatMessage>();
-            _cachedPastas = new List<ChatMessage>();
             _emotes = new List<string>();
         }
 
@@ -145,7 +143,6 @@ namespace PastaMaster.Core
             {
                 msg.IsPasta = true;
                 pasta.IsPasta = true;
-                msg.PastaId = pasta.PastaId;
                 Console.WriteLine($"FOUND PASTA: {msg.Message}");
                 break;
             }
@@ -179,19 +176,44 @@ namespace PastaMaster.Core
 
                 var listToSave = listToCheck.Where(pasta => pasta.IsPasta).ToList();
 
-                var nonIntersect = listToSave.Except(_cachedPastas);
+//                var pastasInDb = await MongoMessageRepository.GetAllPastas();
+//                
+//                var pastasToSaveToDb = new List<PastaRecord>();
+//                foreach (var message in listToSave)
+//                {
+//                    var found = false;
+//                    foreach (var pastaRecord in pastasInDb.Where(pastaRecord => message.PastaId == pastaRecord.PastaId || RegexUtills.GetLevenshteinDistancePercent(message.Message, pastaRecord.Message) >= 80))
+//                    {
+//                        found = true;
+//                    }
+//
+//                    foreach (var pastaAlreadyInList in pastasToSaveToDb.Where(pastaAlreadyInList => message.PastaId == pastaAlreadyInList.PastaId || RegexUtills.GetLevenshteinDistancePercent(message.Message, pastaAlreadyInList.Message) >= 80))
+//                    {
+//                        found = true;
+//                    }
+//
+//                    if (found) continue;
+//                    var pastaToSave = new PastaRecord(message.Message, message.PastaId);
+//                    pastasToSaveToDb.Add(pastaToSave);
+//                }
+//                
+//                if (pastasToSaveToDb.Count > 0)
+//                    await MongoMessageRepository.InsertPastas(pastasToSaveToDb);
+
+                var nonIntersect = listToSave.Except(_cachedPastas).ToList();
 
                 var listToDatabase = nonIntersect.Select(message => new MessageRecord(
                         message.Name, 
                         message.Message, 
                         message.DateTime,
-                        message.IsPasta,
-                        message.PastaId, 
                         _streamer.Name)).ToList();
 
                 if (listToDatabase.Count > 0)
-                    await MongoMessageRepository.InsertMessages(listToDatabase);
-                
+                {
+                    await MongoRepository.InsertMessages(listToDatabase);
+                    _cachedPastas.AddRange(listToSave);
+                }
+
                 var json = JsonConvert.SerializeObject(listToSave);
                 await using (var file = new StreamWriter(AppContext.BaseDirectory + $"{_streamer.Name}.json", false))
                 {
@@ -221,13 +243,10 @@ namespace PastaMaster.Core
 
         private class ChatMessage
         {
-            //TODO PastaId may be the same as PastaId already in DB
-            private static int id = 0;
             public string Name { get; set; }
             public string Message { get; set; }
             public DateTime DateTime { get; set; }
             public bool IsPasta { get; set; }
-            public int PastaId { get; set; }
 
             public ChatMessage(string name, string message)
             {
@@ -235,7 +254,6 @@ namespace PastaMaster.Core
                 this.Message = message;
                 this.DateTime = DateTime.Now;
                 this.IsPasta = false;
-                this.PastaId = id++;
             }
         }
     }
