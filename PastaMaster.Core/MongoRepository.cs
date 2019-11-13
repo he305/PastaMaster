@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
@@ -27,21 +25,22 @@ namespace PastaMaster.Core
             };
             
             _client = new MongoClient(sett);*/
-            
-            _database = _client.GetDatabase("test");
-            _messagesCollection = _database.GetCollection<MessageRecord>("irc-messages");
-            _pastasCollection = _database.GetCollection<PastaRecord>("pastas");
+
+            _database = _client.GetDatabase(config["db_name"]);
+            _messagesCollection = _database.GetCollection<MessageRecord>(config["messages_collection"]);
+            _pastasCollection = _database.GetCollection<PastaRecord>(config["pastas_collection"]);
         }
 
         public static bool IsConnected()
         {
-            return _database.RunCommandAsync((Command<BsonDocument>)"{ping:1}").Wait(1000);
+            return _database.RunCommandAsync((Command<BsonDocument>) "{ping:1}").Wait(5000);
         }
 
         public static async Task InsertMessage(MessageRecord msg)
         {
             await _messagesCollection.InsertOneAsync(msg);
         }
+
         public static async Task InsertPasta(PastaRecord pasta)
         {
             await _pastasCollection.InsertOneAsync(pasta);
@@ -56,7 +55,7 @@ namespace PastaMaster.Core
         {
             return await _pastasCollection.Find(_ => true).ToListAsync();
         }
-        
+
 
         public static async Task InsertMessages(IEnumerable<MessageRecord> msgs)
         {
@@ -83,6 +82,7 @@ namespace PastaMaster.Core
 
             return result;
         }
+
         public static async Task<MessageRecord> GetFirstMessageByField(string fieldName, string fieldValue)
         {
             var filter = Builders<MessageRecord>.Filter.Eq(fieldName, fieldValue);
